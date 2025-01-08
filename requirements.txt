@@ -3,7 +3,7 @@ attrs==18.1.0
 beautifulsoup4==4.6.0
 bs4==0.0.1
 click==6.7
-Flask==1.0.2
+Flask==2.2.5
 funcsigs==1.0.2
 ## !! Could not determine repository location
 Hangman==1.0
