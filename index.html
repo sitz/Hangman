@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8TWKVGFZP3"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-8TWKVGFZP3');
+    </script>
+
+    <title>Animated Hangman Game</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Play the classic Hangman game online. Guess the word before the hangman is fully drawn!">
+    <meta name="keywords" content="Hangman, Word Game, Online Game, Fun Game">
+    <meta name="author" content="Sitesh Shrivastava">
+    <link rel="canonical" href="https://code.siteshshrivastava.com/Hangman">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='20' font-size='20'>&#129302;</text></svg>" type="image/svg+xml">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css"  integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .hangman-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .word-container {
+            font-size: 2rem;
+            letter-spacing: 0.5rem;
+            margin: 20px 0;
+        }
+        .alphabet-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+            justify-items: center;
+            gap: 1px;
+            margin: 15px 0;
+        }
+        .alphabet-buttons button {
+            padding: 15px;
+            font-size: 15px;
+            text-transform: uppercase;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 10px;
+            transition: background-color 0.2s ease;
+        }
+        .alphabet-buttons button:hover {
+            background: #0056b3;
+        }
+        .alphabet-buttons button:disabled {
+            background: #d6d6d6;
+            color: #999;
+            cursor: not-allowed;
+        }
+        .hangman-drawing {
+            width: 200px;
+            height: 300px;
+            margin: auto;
+            position: relative;
+        }
+        .hangman-part {
+            display: none;
+            position: absolute;
+        }
+        .gallows {
+            position: absolute;
+            width: 200px;
+            height: 300px;
+            background: url('https://example.com/gallows.png') no-repeat;
+            background-size: contain;
+        }
+        .rope {
+            width: 5px;
+            height: 30px;
+            background: #8b4513;
+            position: absolute;
+            top: 30px;
+            left: 95px;
+            display: block;
+            transition: height 1s ease-in-out;
+        }
+        .head {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: black;
+            position: absolute;
+            top: 110px;
+            left: 80px;
+            display: none;
+        }
+        .body {
+            width: 10px;
+            height: 70px;
+            background: black;
+            position: absolute;
+            top: 150px;
+            left: 95px;
+            display: none;
+        }
+        .left-arm {
+            width: 40px;
+            height: 10px;
+            background: black;
+            position: absolute;
+            top: 160px;
+            left: 55px;
+            transform: rotate(-45deg);
+            display: none;
+        }
+        .right-arm {
+            width: 40px;
+            height: 10px;
+            background: black;
+            position: absolute;
+            top: 160px;
+            left: 105px;
+            transform: rotate(45deg);
+            display: none;
+        }
+        .left-leg {
+            width: 10px;
+            height: 40px;
+            background: black;
+            position: absolute;
+            top: 220px;
+            left: 70px;
+            transform: rotate(-30deg);
+            display: none;
+        }
+        .right-leg {
+            width: 10px;
+            height: 40px;
+            background: black;
+            position: absolute;
+            top: 220px;
+            left: 110px;
+            transform: rotate(30deg);
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="#">Hangman</a>
+</nav>
+
+<div class="container">
+    <div class="hangman-container">
+        <div class="hangman-drawing">
+            <div class="gallows"></div>
+            <div id="rope" class="rope"></div>
+            <div id="head" class="head"></div>
+            <div id="body" class="body"></div>
+            <div id="left-arm" class="left-arm"></div>
+            <div id="right-arm" class="right-arm"></div>
+            <div id="left-leg" class="left-leg"></div>
+            <div id="right-leg" class="right-leg"></div>
+        </div>
+
+        <div class="word-container" id="word-container">_ _ _ _ _</div>
+
+        <div class="alphabet-buttons" id="alphabet-buttons"></div>
+
+        <button id="reset-btn" class="btn btn-warning">Reset</button>
+
+        <div id="result" class="mt-3 text-danger" style="font-size: 1.5rem;"></div>
+    </div>
+</div>
+
+<script>
+    let word = "";
+    let guessedWord = [];
+    let incorrectGuesses = 0;
+    const maxIncorrectGuesses = 6;
+
+    function fetchNewWord() {
+        fetch('https://random-word-api.herokuapp.com/word?number=1')
+            .then(response => response.json())
+            .then(data => {
+                word = data[0].toLowerCase();
+                guessedWord = Array(word.length).fill('_');
+                document.getElementById('word-container').textContent = guessedWord.join(' ');
+                incorrectGuesses = 0;
+                updateHangman();
+                createAlphabetButtons();
+                document.getElementById('result').textContent = "";
+            });
+    }
+
+    function createAlphabetButtons() {
+        const alphabet = "abcdefghijklmnopqrstuvwxyz";
+        const container = document.getElementById('alphabet-buttons');
+        container.innerHTML = "";
+        alphabet.split('').forEach(letter => {
+            const button = document.createElement('button');
+            button.textContent = letter;
+            button.className = "btn btn-secondary";
+            button.id = `button-${letter}`;
+            button.addEventListener('click', () => guessLetter(letter, button));
+            container.appendChild(button);
+        });
+    }
+
+    function guessLetter(letter, button) {
+        button.disabled = true;
+
+        if (word.includes(letter)) {
+            word.split('').forEach((char, index) => {
+                if (char === letter) guessedWord[index] = letter;
+            });
+            document.getElementById('word-container').textContent = guessedWord.join(' ');
+
+            if (!guessedWord.includes('_')) {
+                document.getElementById('result').textContent = "You Win!";
+            }
+        } else {
+            incorrectGuesses++;
+            updateHangman();
+
+            if (incorrectGuesses > maxIncorrectGuesses) {
+                const rope = document.getElementById('rope');
+                rope.style.height = '120px'; // Extend rope with animation
+                document.getElementById('result').textContent = `Game Over! The word was: ${word}`;
+            }
+        }
+    }
+
+    function updateHangman() {
+        const parts = ["rope", "head", "body", "left-arm", "right-arm", "left-leg", "right-leg"];
+        parts.forEach((part, index) => {
+            document.getElementById(part).style.display = index < incorrectGuesses ? 'block' : 'none';
+        });
+    }
+
+    function handleKeyPress(event) {
+        const letter = event.key.toLowerCase();
+        if (/^[a-z]$/.test(letter)) {
+            const button = document.getElementById(`button-${letter}`);
+            if (button && !button.disabled) {
+                guessLetter(letter, button);
+            }
+        }
+    }
+
+    document.getElementById('reset-btn').addEventListener('click', fetchNewWord);
+    document.addEventListener('keydown', handleKeyPress);
+
+    fetchNewWord();
+</script>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"  integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+
+</body>
+
+</html>
